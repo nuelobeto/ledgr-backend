@@ -1,0 +1,51 @@
+# ─── Secrets / environment ──────────────────────────────────
+# Real secrets live in .env (never committed). The committed
+# template is .env.example, re-included by the negation below.
+.env
+.env.*
+!.env.example
+
+# ─── .NET build output ──────────────────────────────────────
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+publish/
+[Pp]ublish/
+artifacts/
+
+# ─── NuGet ──────────────────────────────────────────────────
+*.nupkg
+*.snupkg
+
+# ─── Test results (Phase 9) ─────────────────────────────────
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+
+# ─── IDEs / editors ─────────────────────────────────────────
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+_ReSharper*/
+*.DotSettings.user
+
+# ─── OS files ───────────────────────────────────────────────
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+# Windows
+Thumbs.db
+Desktop.ini
+# Linux
+*~
+
+# ─── Logs ───────────────────────────────────────────────────
+*.log
+logs/
