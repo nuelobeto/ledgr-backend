@@ -1,5 +1,7 @@
 using System.Text;
 using System.Net.Http.Headers;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
@@ -139,7 +141,15 @@ builder.Services.AddRateLimiter(options =>
             _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(15), QueueLimit = 0 }));
 });
 
-builder.Services.AddDataProtection();
+// Keys default to the local filesystem, which doesn't survive a container rebuild/redeploy —
+// every reset invalidates any confirm-email/reset-password token issued before it. Persist
+// to Postgres instead (already have it) via AppDbContext's IDataProtectionKeyContext.
+// SetApplicationName pins the key ring to a stable name regardless of content-root path,
+// which otherwise differs between `dotnet run` (repo path) and the container (/app) — without
+// it, each is treated as a separate "application" for discriminator purposes.
+builder.Services.AddDataProtection()
+    .SetApplicationName("LedgrApi")
+    .PersistKeysToDbContext<AppDbContext>();
 
 // Falls back to logging (instead of failing to start) when RESEND_API_KEY isn't set yet —
 // e.g. a fresh clone before anyone's signed up for Resend. Set both RESEND_API_KEY and
@@ -167,6 +177,13 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
+    // Applies any pending EF Core migrations on startup — the Docker/compose Postgres
+    // container starts with an empty database, so the schema has to come from somewhere.
+    // Fine for a single API instance; if this ever runs as multiple replicas, migrating
+    // from every instance's startup would race — move this to a one-off init step first.
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+
     var roleManager = scope.ServiceProvider
         .GetRequiredService<RoleManager<IdentityRole<Guid>>>();
 

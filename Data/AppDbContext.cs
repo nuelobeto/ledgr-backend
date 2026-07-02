@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -5,7 +6,11 @@ using Api.Models;
 
 namespace Api.Data;
 
-public class AppDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
+// IDataProtectionKeyContext: the container's filesystem doesn't survive a rebuild/redeploy,
+// so the Data Protection key ring (which encrypts email-confirmation and password-reset
+// tokens) needs somewhere durable to live — Postgres, since it's already here. Wired up in
+// Program.cs via .PersistKeysToDbContext<AppDbContext>().
+public class AppDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>, IDataProtectionKeyContext
 {
   public AppDbContext(DbContextOptions<AppDbContext> options)
       : base(options)
@@ -92,4 +97,5 @@ public class AppDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
   public DbSet<Category> Categories => Set<Category>();
   public DbSet<Transaction> Transactions => Set<Transaction>();
   public DbSet<RecurringTransaction> RecurringTransactions => Set<RecurringTransaction>();
+  public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 }

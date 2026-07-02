@@ -17,5 +17,42 @@ services:
       timeout: 5s
       retries: 5
 
+  api:
+    build:
+      context: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Container-to-container: service name + Postgres's own internal port — NOT the
+      # ${DB_PORT} host-side mapping above, which only matters to things outside this network.
+      POSTGRES_HOST: postgres
+      DB_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+      JWT_ACCESS_TOKEN_MINUTES: ${JWT_ACCESS_TOKEN_MINUTES}
+      JWT_REFRESH_TOKEN_DAYS: ${JWT_REFRESH_TOKEN_DAYS}
+      MFA_ISSUER: ${MFA_ISSUER}
+      MFA_REQUIRED: ${MFA_REQUIRED}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM: ${RESEND_FROM}
+      # Browser-facing: a real person's browser hits these directly (the confirm-email link,
+      # the reset-password redirect), so they stay as addresses OUTSIDE the compose network —
+      # the same host-published ones you'd use without Docker at all.
+      APP_URL: ${APP_URL}
+      API_URL: ${API_URL}
+    ports:
+      - "5056:8080"
+
+# The client (ledgr) is a separate repo, deployed as its own independent service on Render —
+# deliberately not wired in here. Run/build it standalone (see ledgr/Dockerfile) and point it
+# at this API via BASE_URL, e.g. http://host.docker.internal:5056 if both run in Docker at
+# once, or http://localhost:5056 if the API is running natively via `dotnet run`.
 volumes:
   pgdata:

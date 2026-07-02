@@ -1,0 +1,13 @@
+bin
+obj
+.git
+.env
+.env.*
+.vs
+.vscode
+.idea
+*.user
+[Tt]est[Rr]esult*
+*.trx
+docker-compose.yml
+Dockerfile
