@@ -37,7 +37,7 @@ public class AuthController(
 
       var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
       var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-      var link = $"{config["APP_URL"]}/api/auth/confirm-email?userId={user.Id}&token={encoded}";
+      var link = $"{config["API_URL"]}/api/auth/confirm-email?userId={user.Id}&token={encoded}";
 
       await emailSender.SendAsync(user.Email!, "Confirm your email",
         $"Confirm your account: <a href=\"{link}\">click here</a>");
@@ -50,9 +50,15 @@ public class AuthController(
   [HttpGet("confirm-email")]
   public async Task<IActionResult> ConfirmEmail(string userId, string token, CancellationToken ct)
   {
+    // This is the link the user clicks straight out of their inbox — a browser navigation,
+    // not an XHR/fetch call. So it can't just return JSON: it needs to land the user on an
+    // actual page. Do the verification here (that part has to stay server-side, it consumes
+    // a one-time token), then hand off to the frontend's result page via a 302.
+    var frontendUrl = config["APP_URL"];
+
     var user = await userManager.FindByIdAsync(userId);
     if (user is null)
-      return BadRequest(new { message = "Invalid or expired confirmation link." });
+      return Redirect($"{frontendUrl}/auth/email-confirmed?status=error");
 
     string decoded;
     try
@@ -61,16 +67,16 @@ public class AuthController(
     }
     catch (FormatException)
     {
-      return BadRequest(new { message = "Invalid or expired confirmation link." });
+      return Redirect($"{frontendUrl}/auth/email-confirmed?status=error");
     }
 
     var result = await userManager.ConfirmEmailAsync(user, decoded);
     if (!result.Succeeded)
-      return BadRequest(new { message = "Invalid or expired confirmation link." });
+      return Redirect($"{frontendUrl}/auth/email-confirmed?status=error");
 
     await auditLogger.LogAsync(AuditEventType.EmailConfirmed, user.Id, ct: ct);
 
-    return Ok(new { message = "Email confirmed. You can now log in." });
+    return Redirect($"{frontendUrl}/auth/email-confirmed?status=success");
   }
 
   [EnableRateLimiting("login")]
@@ -175,7 +181,7 @@ public class AuthController(
     {
       var token = await userManager.GeneratePasswordResetTokenAsync(user);
       var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-      var link = $"{config["APP_URL"]}/reset-password?userId={user.Id}&token={encoded}";
+      var link = $"{config["APP_URL"]}/auth/reset-password?userId={user.Id}&token={encoded}";
       await emailSender.SendAsync(user.Email!, "Reset your password",
         $"Reset your password: <a href=\"{link}\">click here</a>");
       await auditLogger.LogAsync(AuditEventType.PasswordResetRequested, user.Id);

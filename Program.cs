@@ -1,4 +1,5 @@
 using System.Text;
+using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
@@ -139,7 +140,23 @@ builder.Services.AddRateLimiter(options =>
 });
 
 builder.Services.AddDataProtection();
-builder.Services.AddScoped<IEmailSender, LoggingEmailSender>();
+
+// Falls back to logging (instead of failing to start) when RESEND_API_KEY isn't set yet —
+// e.g. a fresh clone before anyone's signed up for Resend. Set both RESEND_API_KEY and
+// RESEND_FROM to switch a running environment over to actually sending mail.
+if (!string.IsNullOrWhiteSpace(config["RESEND_API_KEY"]))
+{
+    builder.Services.AddHttpClient<IEmailSender, ResendEmailSender>(client =>
+    {
+        client.BaseAddress = new Uri("https://api.resend.com/");
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", config["RESEND_API_KEY"]);
+    });
+}
+else
+{
+    builder.Services.AddScoped<IEmailSender, LoggingEmailSender>();
+}
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddHttpContextAccessor();
