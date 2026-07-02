@@ -155,6 +155,7 @@ public class UserController(
     if (request.AvatarUrl is not null) user.AvatarUrl = Normalize(request.AvatarUrl);
     if (request.Locale is not null) user.Locale = Normalize(request.Locale);
     if (request.TimeZoneId is not null) user.TimeZoneId = Normalize(request.TimeZoneId);
+    if (request.Currency is not null) user.Currency = Normalize(request.Currency)?.ToUpperInvariant();
 
     user.UpdatedAtUtc = DateTime.UtcNow;
     await userManager.UpdateAsync(user);

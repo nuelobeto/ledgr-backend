@@ -16,6 +16,7 @@ public record UserResponse(
   string? AvatarUrl,
   string? Locale,
   string? TimeZoneId,
+  string? Currency,
   DateTime? LastLoginAtUtc,
   DateTime CreatedAtUtc,
   DateTime UpdatedAtUtc);
@@ -35,6 +36,7 @@ public static class UserMappingExtensions
       user.AvatarUrl,
       user.Locale,
       user.TimeZoneId,
+      user.Currency,
       user.LastLoginAtUtc,
       user.CreatedAtUtc,
       user.UpdatedAtUtc);
@@ -60,5 +62,9 @@ public record UpdateProfileRequest(
     string? Locale,
 
     [param: StringLength(64)]
-    string? TimeZoneId
+    string? TimeZoneId,
+
+    // ISO 4217, e.g. "USD" — case doesn't matter here, UserController.UpdateMe uppercases it.
+    [param: RegularExpression("^[A-Za-z]{3}$", ErrorMessage = "Currency must be a 3-letter ISO 4217 code.")]
+    string? Currency
 );
