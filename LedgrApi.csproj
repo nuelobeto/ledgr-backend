@@ -12,7 +12,12 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="10.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.9" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
+    <!-- Direct override: Microsoft.AspNetCore.OpenApi only floors this at >=2.0.0, which
+         resolves to the vulnerable 2.0.0 (GHSA-v5pm-xwqc-g5wc / CVE-2026-49451, stack-overflow
+         DoS parsing circular OpenAPI schema refs — fixed in 2.7.5+). Pinning it directly here
+         makes NuGet resolve to the patched version project-wide instead. -->
+    <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
